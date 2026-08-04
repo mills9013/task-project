@@ -1,6 +1,6 @@
-import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ExternalLink } from '@/components/external-link';
@@ -10,6 +10,11 @@ import { Collapsible } from '@/components/ui/collapsible';
 import { WebBadge } from '@/components/web-badge';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import Constants from 'expo-constants';
+
+const BASE_URL: string =
+  (Constants.expoConfig?.extra?.apiBaseUrl as string | undefined) ??
+  'http://localhost:8000';
 
 export default function TabTwoScreen() {
   const safeAreaInsets = useSafeAreaInsets();
@@ -18,6 +23,31 @@ export default function TabTwoScreen() {
     bottom: safeAreaInsets.bottom + BottomTabInset + Spacing.three,
   };
   const theme = useTheme();
+  
+  const [healthStatus, setHealthStatus] = useState<string | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+
+  const checkHealth = useCallback(async () => {
+    setHealthLoading(true);
+    setHealthStatus(null);
+    try {
+      const res = await fetch(`${BASE_URL}/health`);
+      if (res.ok) {
+        const data = await res.json();
+        setHealthStatus(data.status === 'ok' ? 'Online' : 'Degraded');
+      } else {
+        setHealthStatus('Offline');
+      }
+    } catch {
+      setHealthStatus('Offline');
+    } finally {
+      setHealthLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkHealth();
+  }, [checkHealth]);
 
   const contentPlatformStyle = Platform.select({
     android: {
@@ -39,84 +69,71 @@ export default function TabTwoScreen() {
       contentContainerStyle={[styles.contentContainer, contentPlatformStyle]}>
       <ThemedView style={styles.container}>
         <ThemedView style={styles.titleContainer}>
-          <ThemedText type="subtitle">Explore</ThemedText>
+          <ThemedText type="subtitle">About & Status</ThemedText>
           <ThemedText style={styles.centerText} themeColor="textSecondary">
-            This starter app includes example{'\n'}code to help you get started.
+            Weather application assessment demo
           </ThemedText>
-
-          <ExternalLink href="https://docs.expo.dev" asChild>
-            <Pressable style={({ pressed }) => pressed && styles.pressed}>
-              <ThemedView type="backgroundElement" style={styles.linkButton}>
-                <ThemedText type="link">Expo documentation</ThemedText>
-                <SymbolView
-                  tintColor={theme.text}
-                  name={{ ios: 'arrow.up.right.square', android: 'link', web: 'link' }}
-                  size={12}
-                />
-              </ThemedView>
-            </Pressable>
-          </ExternalLink>
         </ThemedView>
 
         <ThemedView style={styles.sectionsWrapper}>
-          <Collapsible title="File-based routing">
+          <ThemedView type="backgroundElement" style={styles.statusCard}>
+            <View style={styles.statusHeaderRow}>
+              <ThemedText type="defaultSemiBold">Backend Service Status</ThemedText>
+              <Pressable onPress={checkHealth} style={styles.refreshIcon}>
+                <SymbolView name="arrow.clockwise" size={16} tintColor={theme.tint} />
+              </Pressable>
+            </View>
+            
+            {healthLoading ? (
+              <ActivityIndicator size="small" color={theme.tint} style={{ alignSelf: 'flex-start', marginTop: 8 }} />
+            ) : (
+              <View style={styles.statusValueRow}>
+                <View style={[styles.statusIndicator, { backgroundColor: healthStatus === 'Online' ? '#34C759' : '#FF3B30' }]} />
+                <ThemedText>{healthStatus}</ThemedText>
+              </View>
+            )}
+            <ThemedText type="small" themeColor="textSecondary" style={styles.urlText}>
+              {BASE_URL}
+            </ThemedText>
+          </ThemedView>
+
+          <Collapsible title="Application Architecture">
             <ThemedText type="small">
-              This app has two screens: <ThemedText type="code">src/app/index.tsx</ThemedText> and{' '}
-              <ThemedText type="code">src/app/explore.tsx</ThemedText>
+              • <ThemedText type="smallBold">Frontend:</ThemedText> Expo managed React Native app
             </ThemedText>
             <ThemedText type="small">
-              The layout file in <ThemedText type="code">src/app/_layout.tsx</ThemedText> sets up
-              the tab navigator.
+              • <ThemedText type="smallBold">Backend:</ThemedText> Python FastAPI service
             </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/router/introduction">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
+            <ThemedText type="small">
+              • <ThemedText type="smallBold">Deployment:</ThemedText> GitHub Actions to AWS ECR (OIDC) & EAS to TestFlight
+            </ThemedText>
+          </Collapsible>
+
+          <Collapsible title="Features">
+            <ThemedText type="small">
+              • Real-time weather data via Open-Meteo API
+            </ThemedText>
+            <ThemedText type="small">
+              • City geocoding and search
+            </ThemedText>
+            <ThemedText type="small">
+              • 7-day daily forecast
+            </ThemedText>
+            <ThemedText type="small">
+              • In-memory 5-minute TTL caching on the backend
+            </ThemedText>
+          </Collapsible>
+
+          <Collapsible title="Links">
+            <ExternalLink href="https://expo.dev">
+              <ThemedText type="linkPrimary">Expo Documentation</ThemedText>
             </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Android, iOS, and web support">
-            <ThemedView type="backgroundElement" style={styles.collapsibleContent}>
-              <ThemedText type="small">
-                You can open this project on Android, iOS, and the web. To open the web version,
-                press <ThemedText type="smallBold">w</ThemedText> in the terminal running this
-                project.
-              </ThemedText>
-              <Image
-                source={require('@/assets/images/tutorial-web.png')}
-                style={styles.imageTutorial}
-              />
-            </ThemedView>
-          </Collapsible>
-
-          <Collapsible title="Images">
-            <ThemedText type="small">
-              For static images, you can use the <ThemedText type="code">@2x</ThemedText> and{' '}
-              <ThemedText type="code">@3x</ThemedText> suffixes to provide files for different
-              screen densities.
-            </ThemedText>
-            <Image source={require('@/assets/images/react-logo.png')} style={styles.imageReact} />
-            <ExternalLink href="https://reactnative.dev/docs/images">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
+            <ExternalLink href="https://fastapi.tiangolo.com">
+              <ThemedText type="linkPrimary">FastAPI Documentation</ThemedText>
             </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Light and dark mode components">
-            <ThemedText type="small">
-              This template has light and dark mode support. The{' '}
-              <ThemedText type="code">useColorScheme()</ThemedText> hook lets you inspect what the
-              user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
+            <ExternalLink href="https://open-meteo.com">
+              <ThemedText type="linkPrimary">Open-Meteo API</ThemedText>
             </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Animations">
-            <ThemedText type="small">
-              This template includes an example of an animated component. The{' '}
-              <ThemedText type="code">src/components/ui/collapsible.tsx</ThemedText> component uses
-              the powerful <ThemedText type="code">react-native-reanimated</ThemedText> library to
-              animate opening this hint.
-            </ThemedText>
           </Collapsible>
         </ThemedView>
         {Platform.OS === 'web' && <WebBadge />}
@@ -146,35 +163,35 @@ const styles = StyleSheet.create({
   centerText: {
     textAlign: 'center',
   },
-  pressed: {
-    opacity: 0.7,
-  },
-  linkButton: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.five,
-    justifyContent: 'center',
-    gap: Spacing.one,
-    alignItems: 'center',
-  },
   sectionsWrapper: {
     gap: Spacing.five,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
   },
-  collapsibleContent: {
+  statusCard: {
+    borderRadius: Spacing.three,
+    padding: Spacing.four,
+  },
+  statusHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  imageTutorial: {
-    width: '100%',
-    aspectRatio: 296 / 171,
-    borderRadius: Spacing.three,
-    marginTop: Spacing.two,
+  refreshIcon: {
+    padding: 4,
   },
-  imageReact: {
-    width: 100,
-    height: 100,
-    alignSelf: 'center',
+  statusValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  statusIndicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  urlText: {
+    marginTop: 8,
   },
 });

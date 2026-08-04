@@ -1,56 +1,114 @@
-# Welcome to your Expo app 👋
+# Task Project — Full-Stack Weather Application
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A complete full-stack mobile application demonstrating a React Native (Expo) frontend, a Python (FastAPI) backend, and automated deployment pipelines via GitHub Actions.
 
-## Get started
+## Architecture Overview
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```text
+┌────────────────┐      HTTPS (REST)      ┌─────────────────────────┐
+│                │                        │                         │
+│  Mobile App    │ ─────────────────────► │  FastAPI Backend        │
+│  (Expo / RN)   │                        │  (AWS ECR / ECS)        │
+│                │ ◄───────────────────── │                         │
+└───────┬────────┘                        └──────────┬──────────────┘
+        │                                            │ (Proxy)
+        │                                            ▼
+        │                                 ┌─────────────────────────┐
+        │                                 │  Open-Meteo API         │
+        │                                 │  (Geocoding + Forecast) │
+        │                                 └─────────────────────────┘
+        ▼
+┌────────────────┐
+│  TestFlight    │
+│  (via EAS)     │
+└────────────────┘
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+The application is a simple Weather Dashboard that allows users to search for a city and view the current conditions alongside a 7-day forecast.
 
-### Other setup steps
+The backend acts as an intelligent proxy to the public Open-Meteo API, providing:
+- Input validation via Pydantic
+- Automatic city-to-coordinate geocoding
+- Response shaping (transforming raw API data into a clean, typed schema for the client)
+- In-memory TTL caching (5 minutes) to reduce upstream API calls
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Repository Structure
 
-## Learn more
+- `frontend/`: React Native mobile application using Expo (SDK 57) and Expo Router.
+- `backend/`: Python backend service using FastAPI, containerized with Docker.
+- `infra/`: AWS IAM policies for setting up OIDC federation for GitHub Actions.
+- `.github/workflows/`: CI/CD pipelines.
 
-To learn more about developing your project with Expo, look at the following resources:
+## Local Setup
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Backend (FastAPI)
 
-## Join the community
+Prerequisites: Python 3.12+
 
-Join our community of developers creating universal apps.
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+# Run the tests
+pytest
+
+# Start the dev server
+uvicorn app.main:app --reload
+```
+
+The backend will be available at `http://localhost:8000`. You can view the interactive API documentation at `http://localhost:8000/docs`.
+
+### Frontend (Expo)
+
+Prerequisites: Node.js 22+
+
+```bash
+cd frontend
+npm install
+
+# Start the Expo development server
+npx expo start
+```
+
+Press `i` to open in an iOS simulator, `a` for Android, or `w` for the web.
+
+## Pipelines (CI/CD)
+
+### Backend: GitHub Actions -> Amazon ECR
+- Triggered on push to `main` when `backend/` files change.
+- Runs `ruff` (linting) and `pytest` (unit tests).
+- If checks pass, builds a multi-stage Docker image and pushes it to Amazon ECR.
+- Uses **OIDC Federation** to authenticate with AWS, eliminating the need for long-lived access keys.
+- Tags the image with both `latest` and the short git SHA for traceability.
+
+### Frontend: GitHub Actions -> EAS -> TestFlight
+- Triggered on push to `main` when `frontend/` files change (or manually via workflow dispatch).
+- Uses the Expo Application Services (EAS) CLI.
+- Runs `eas build` targeting the `production` profile for iOS.
+- Runs `eas submit` to automatically upload the resulting IPA to Apple TestFlight.
+- All credentials are kept out of source control and managed via GitHub Secrets.
+
+## Configuration & Secrets
+
+### Backend Deployment Variables (GitHub)
+- `AWS_ACCOUNT_ID`: AWS Account ID (e.g., `123456789012`).
+- `AWS_REGION`: AWS Region (e.g., `us-east-1`).
+- `ECR_REPOSITORY`: The name of the ECR repository.
+
+### Frontend Deployment Secrets (GitHub)
+- `EXPO_TOKEN`: Personal Access Token for EAS.
+- `ASC_APP_ID`: App Store Connect App ID (for TestFlight submission).
+- Apple Developer credentials are also required if `eas credentials` haven't been previously configured.
+
+## Trade-offs & Design Decisions
+
+1. **Choice of Public API:** Open-Meteo was chosen because it provides high-quality weather data without requiring an API key. This ensures the codebase remains completely free of embedded credentials and simplifies local setup for reviewers.
+2. **Monorepo Structure:** The frontend and backend are kept in a single repository to simplify the assessment review process and allow for atomic commits that touch both sides. In a larger organization, these might be split into separate repos.
+3. **In-Memory Caching:** The backend uses a simple Python dictionary for TTL caching rather than a full Redis instance. This is sufficient for the scale of this assessment and reduces infrastructure complexity.
+4. **Environment Variables:** The frontend reads `apiBaseUrl` from `expo-constants` `extra`. In a real-world scenario with multiple environments, this would be populated from a `.env` file during the EAS build process.
+
+## Time Spent
+
+- ~3 hours for complete implementation (scaffolding, backend, frontend integration, Docker, CI/CD pipelines, documentation).

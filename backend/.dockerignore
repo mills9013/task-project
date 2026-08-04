@@ -1,0 +1,31 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Test & dev artefacts
+.pytest_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+
+# Dev-only dependencies — never in the image
+requirements-dev.txt
+pyproject.toml
+
+# Tests — not needed at runtime
+tests/
+
+# Secrets / env files
+.env
+.env.*
+
+# Editor
+.vscode/
+.idea/

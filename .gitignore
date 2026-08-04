@@ -1,43 +1,42 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# ─── Frontend (Expo / React Native) ─────────────────────────────────────────
+frontend/node_modules/
+frontend/.expo/
+frontend/dist/
+frontend/web-build/
+frontend/expo-env.d.ts
 
-# dependencies
-node_modules/
+# Native generated folders
+frontend/ios/
+frontend/android/
 
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
+# ─── Backend (Python / FastAPI) ──────────────────────────────────────────────
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.pytest_cache/
+backend/*.egg-info/
+backend/.venv/
+backend/venv/
+backend/.env
+backend/.env.*
+backend/*.pyc
 
-# Native
-.kotlin/
-*.orig.*
-*.jks
+# ─── macOS ───────────────────────────────────────────────────────────────────
+.DS_Store
+
+# ─── Credentials & secrets (belt-and-suspenders) ─────────────────────────────
+*.pem
 *.p8
 *.p12
 *.key
 *.mobileprovision
+*.jks
 
-# Metro
-.metro-health-check*
+# ─── Editor ──────────────────────────────────────────────────────────────────
+.vscode/
+*.tsbuildinfo
 
-# debug
+# ─── Misc ────────────────────────────────────────────────────────────────────
 npm-debug.*
 yarn-debug.*
 yarn-error.*
-
-# macOS
-.DS_Store
-*.pem
-
-# local env files
-.env*.local
-
-# typescript
-*.tsbuildinfo
-
-example
-
-# generated native folders
-/ios
-/android
+.metro-health-check*

@@ -157,7 +157,10 @@ export default function WeatherScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+    <SafeAreaView 
+      edges={['top', 'left', 'right']} 
+      style={[styles.safeArea, { backgroundColor: theme.background }]}
+    >
       {/* ── Search bar ── */}
       <ThemedView style={styles.searchRow}>
         <TextInput

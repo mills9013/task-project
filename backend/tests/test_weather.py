@@ -65,7 +65,7 @@ async def test_health_returns_ok() -> None:
     async with AsyncClient(app=app, base_url="http://test") as client:
         response = await client.get("/health")
 
-    assert response.status_code == 200
+    assert response.status_code == 500  # INTENTIONAL FAILURE FOR CI DEMO
     body = response.json()
     assert body["status"] == "ok"
     assert "version" in body

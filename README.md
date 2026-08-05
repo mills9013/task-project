@@ -109,14 +109,19 @@ Set the following **Repository Secrets**:
 - `APPLE_TEAM_ID`: Your 10-character alphanumeric Apple Team ID.
 
 **Crucial First-Time Setup Step (Apple Credentials):**
-Before the CI/CD pipeline can build your iOS app non-interactively on GitHub Actions, you **must** generate Apple Distribution Certificates and Provisioning Profiles and save them to Expo's servers. Run this locally in your terminal exactly once:
+Before the CI/CD pipeline can build and submit your iOS app non-interactively on GitHub Actions, you **must** generate Apple Distribution Certificates, Provisioning Profiles, and an **App Store Connect API Key** and save them to Expo's servers. Run this locally in your terminal exactly once:
 
 ```bash
 cd frontend
 npx eas credentials
 ```
 
-Follow the interactive prompts to select **iOS** -> **production** -> **All**. Log in to Apple when asked and allow EAS to automatically generate and sync the required credentials. Once setup is complete, the GitHub Actions pipeline will successfully build and submit your app!
+1. Select **iOS** -> **production**.
+2. First, ensure your Distribution Certificate and Provisioning Profile are set up (Expo will guide you through this if they are missing).
+3. Next, from the main iOS credentials menu, select **App Store Connect: Manage your API Key**.
+4. Choose **Set up your project to use an API Key for EAS Submit** and let Expo generate it.
+
+Once Expo says the API Key is successfully generated and saved to their servers, the GitHub Actions pipeline will successfully build and submit your app completely non-interactively!
 
 ## Trade-offs & Design Decisions
 

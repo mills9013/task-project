@@ -124,6 +124,7 @@ Follow the interactive prompts to select **iOS** -> **production** -> **All**. L
 2. **Monorepo Structure:** The frontend and backend are kept in a single repository to simplify the assessment review process and allow for atomic commits that touch both sides. In a larger organization, these might be split into separate repos.
 3. **In-Memory Caching:** The backend uses a simple Python dictionary for TTL caching rather than a full Redis instance. This is sufficient for the scale of this assessment and reduces infrastructure complexity.
 4. **Environment Variables:** The frontend reads `apiBaseUrl` from `expo-constants` `extra`. In a real-world scenario with multiple environments, this would be populated from a `.env` file during the EAS build process.
+5. **EAS Submit CI Workaround:** The EAS CLI currently has a known bug where `eas submit` does not evaluate environment variables in `eas.json` natively. Rather than hardcoding the sensitive App Store Connect App ID in source control, a `jq` command is intentionally used within the GitHub Actions workflow to securely inject the GitHub Secret into `eas.json` immediately prior to submission.
 
 ## Time Spent
 

@@ -21,9 +21,10 @@ This directory contains the AWS IAM policies required to set up OpenID Connect (
 3. Select **Web identity**.
 4. Choose the Identity provider you just created (`token.actions.githubusercontent.com`).
 5. Choose the Audience `sts.amazonaws.com`.
-6. Click **Next**.
-7. Skip attaching policies for now and click **Next**.
-8. Name the role `github-actions-task-project-role` and click **Create role**.
+6. Fill in your **GitHub organization** (e.g., `mills9013`) and **GitHub repository** (`task-project`). This is required to satisfy AWS security constraints.
+7. Click **Next**.
+8. Skip attaching policies for now and click **Next**.
+9. Name the role `github-actions-task-project-role` and click **Create role**.
 
 ### 3. Update the Trust Policy
 

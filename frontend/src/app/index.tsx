@@ -21,8 +21,13 @@ import {
   StyleSheet,
   TextInput,
   View,
+  Appearance,
+  useColorScheme,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useLocalSearchParams } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -86,11 +91,37 @@ const DEFAULT_CITY = 'London';
 
 export default function WeatherScreen() {
   const theme = useTheme();
-  const [city, setCity] = useState(DEFAULT_CITY);
-  const [inputValue, setInputValue] = useState(DEFAULT_CITY);
+  const colorScheme = useColorScheme();
+  const toggleTheme = () => {
+    Appearance.setColorScheme(colorScheme === 'dark' ? 'light' : 'dark');
+  };
+  const params = useLocalSearchParams<{ city?: string }>();
+  
+  const [city, setCity] = useState(params.city || DEFAULT_CITY);
+  const [inputValue, setInputValue] = useState(params.city || DEFAULT_CITY);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savedCities, setSavedCities] = useState<string[]>([]);
+
+  useEffect(() => {
+    AsyncStorage.getItem('savedCities').then(val => {
+      if (val) setSavedCities(JSON.parse(val));
+    });
+  }, []);
+
+  const isSaved = savedCities.includes(city);
+  
+  const toggleSave = async () => {
+    let newSaved;
+    if (isSaved) {
+      newSaved = savedCities.filter(c => c !== city);
+    } else {
+      newSaved = [...savedCities, city];
+    }
+    setSavedCities(newSaved);
+    await AsyncStorage.setItem('savedCities', JSON.stringify(newSaved));
+  };
 
   const load = useCallback(async (targetCity: string) => {
     Keyboard.dismiss();
@@ -100,6 +131,7 @@ export default function WeatherScreen() {
       const data = await fetchWeather(targetCity);
       setWeather(data);
       setCity(targetCity);
+      setInputValue(targetCity);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unexpected error. Please try again.');
     } finally {
@@ -108,8 +140,12 @@ export default function WeatherScreen() {
   }, []);
 
   useEffect(() => {
-    load(DEFAULT_CITY);
-  }, [load]);
+    if (params.city) {
+      load(params.city);
+    } else {
+      load(DEFAULT_CITY);
+    }
+  }, [params.city, load]);
 
   const handleSearch = () => {
     const trimmed = inputValue.trim();
@@ -149,7 +185,22 @@ export default function WeatherScreen() {
           accessibilityLabel="Search"
           accessibilityRole="button"
         >
-          <SymbolView name="magnifyingglass" size={18} tintColor="#fff" />
+          <Ionicons name="search" size={18} color={theme.background} />
+        </Pressable>
+        <Pressable
+          onPress={toggleTheme}
+          style={({ pressed }) => [
+            styles.themeButton,
+            { opacity: pressed ? 0.8 : 1, backgroundColor: theme.backgroundElement },
+          ]}
+          accessibilityLabel="Toggle Theme"
+          accessibilityRole="button"
+        >
+          <Ionicons 
+            name={colorScheme === 'dark' ? 'sunny' : 'moon'} 
+            size={20} 
+            color={theme.text} 
+          />
         </Pressable>
       </ThemedView>
 
@@ -198,12 +249,24 @@ export default function WeatherScreen() {
               {/* ── Current conditions ── */}
               <ThemedView type="backgroundElement" style={styles.currentCard}>
                 <View style={styles.currentHeader}>
-                  <View>
+                  <View style={{ flex: 1, paddingRight: 12 }}>
+                    <View style={styles.cityHeaderCol}>
+                      <ThemedText type="subtitle">
+                        {weather.city}, {weather.country}
+                      </ThemedText>
+                      <Pressable 
+                        onPress={toggleSave} 
+                        hitSlop={10} 
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.backgroundSelected, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, alignSelf: 'flex-start' }}
+                      >
+                        <Ionicons name={isSaved ? "star" : "star-outline"} size={16} color={isSaved ? "#FFD700" : theme.tint} />
+                        <ThemedText type="smallBold" style={{ color: theme.tint }}>
+                          {isSaved ? "Saved" : "Save"}
+                        </ThemedText>
+                      </Pressable>
+                    </View>
                     <ThemedText type="title">
                       {Math.round(weather.current.temperature_c)}°C
-                    </ThemedText>
-                    <ThemedText type="subtitle">
-                      {weather.city}, {weather.country}
                     </ThemedText>
                     <ThemedText themeColor="textSecondary">
                       {weather.current.description}
@@ -275,6 +338,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  themeButton: {
+    width: 44,
+    height: 44,
+    borderRadius: Spacing.three,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   centeredState: {
     flex: 1,
     alignItems: 'center',
@@ -306,6 +376,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  cityHeaderCol: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: Spacing.two,
   },
   statsRow: {
     flexDirection: 'row',

@@ -47,8 +47,7 @@
       "router": {},
       "eas": {
         "projectId": "2efbb578-5501-40ed-8eca-c4f8e56fec6e"
-      },
-      "apiBaseUrl": "http://localhost:8000"
+      }
     },
     "owner": "spensermillss-team"
   }

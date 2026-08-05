@@ -11,9 +11,7 @@ import { Platform } from 'react-native';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-const configuredUrl =
-  (Constants.expoConfig?.extra?.apiBaseUrl as string | undefined) ??
-  'http://localhost:8000';
+const configuredUrl = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 // Android emulators need 10.0.2.2 to access the host machine's localhost
 const BASE_URL: string =

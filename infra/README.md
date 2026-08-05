@@ -14,25 +14,16 @@ This directory contains the AWS IAM policies required to set up OpenID Connect (
 6. Set the **Audience** to `sts.amazonaws.com`.
 7. Click **Add provider**.
 
-### 2. Create the IAM Role for GitHub Actions
+### 2. Create the IAM Role (Custom Trust Policy)
 
 1. Open the AWS IAM Console.
 2. Go to **Roles** -> **Create role**.
-3. Select **Web identity**.
-4. Choose the Identity provider you just created (`token.actions.githubusercontent.com`).
-5. Choose the Audience `sts.amazonaws.com`.
-6. Fill in your **GitHub organization** (e.g., `mills9013`) and **GitHub repository** (`task-project`). This is required to satisfy AWS security constraints.
-7. Click **Next**.
-8. Skip attaching policies for now and click **Next**.
-9. Name the role `github-actions-task-project-role` and click **Create role**.
-
-### 3. Update the Trust Policy
-
-1. Open the newly created `github-actions-task-project-role`.
-2. Go to the **Trust relationships** tab and click **Edit trust policy**.
-3. Replace the contents with the JSON from `github-oidc-trust-policy.json`.
-4. **IMPORTANT**: Replace `<YOUR_ACCOUNT_ID>` with your AWS Account ID, and `<YOUR_GITHUB_ORG>` with your GitHub Organization or Username.
-5. Click **Update policy**.
+3. Select **Custom trust policy** (Do not select Web identity, as the AWS UI sometimes fails to generate the required scoping).
+4. Paste the JSON contents from `github-oidc-trust-policy.json` into the editor.
+5. **IMPORTANT**: Replace `<YOUR_ACCOUNT_ID>` with your AWS Account ID (e.g., `123456789012`), and `<YOUR_GITHUB_ORG>` with your GitHub Username (`mills9013`).
+6. Click **Next**.
+7. Skip attaching policies for now and click **Next**.
+8. Name the role `github-actions-task-project-role` and click **Create role**.
 
 ### 4. Attach the Permissions Policy
 

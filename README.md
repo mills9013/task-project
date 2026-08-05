@@ -105,8 +105,6 @@ The frontend uses Expo Application Services (EAS) to build and submit the app.
 Set the following **Repository Secrets**:
 - `EXPO_TOKEN`: Create a Robot token from your Expo dashboard (Settings > Access tokens).
 - `ASC_APP_ID`: App Store Connect App ID (The 10-digit "Apple ID" found in App Store Connect under General > App Information).
-- `APPLE_ID`: Your Apple Developer account email address.
-- `APPLE_TEAM_ID`: Your 10-character alphanumeric Apple Team ID.
 
 **Crucial First-Time Setup Step (Apple Credentials):**
 Before the CI/CD pipeline can build and submit your iOS app non-interactively on GitHub Actions, you **must** generate Apple Distribution Certificates, Provisioning Profiles, and an **App Store Connect API Key** and save them to Expo's servers. Run this locally in your terminal exactly once:
@@ -128,7 +126,7 @@ Once Expo says the API Key is successfully generated and saved to their servers,
 1. **Choice of Public API:** Open-Meteo was chosen because it provides high-quality weather data without requiring an API key. This ensures the codebase remains completely free of embedded credentials and simplifies local setup for reviewers.
 2. **Monorepo Structure:** The frontend and backend are kept in a single repository to simplify the assessment review process and allow for atomic commits that touch both sides. In a larger organization, these might be split into separate repos.
 3. **In-Memory Caching:** The backend uses a simple Python dictionary for TTL caching rather than a full Redis instance. This is sufficient for the scale of this assessment and reduces infrastructure complexity.
-4. **Environment Variables:** The frontend reads `apiBaseUrl` from `expo-constants` `extra`. In a real-world scenario with multiple environments, this would be populated from a `.env` file during the EAS build process.
+4. **Environment Variables:** The frontend dynamically configures its API base URL using Expo's modern `EXPO_PUBLIC_` environment variables (`process.env.EXPO_PUBLIC_API_URL`). During local development, it defaults to `localhost:8000`, and during an EAS production build, the production API URL is injected directly via the `env` block in `eas.json`.
 5. **EAS Submit CI Workaround:** The EAS CLI currently has a known bug where `eas submit` does not evaluate environment variables in `eas.json` natively. Rather than hardcoding the sensitive App Store Connect App ID in source control, a `jq` command is intentionally used within the GitHub Actions workflow to securely inject the GitHub Secret into `eas.json` immediately prior to submission.
 
 ## Time Spent

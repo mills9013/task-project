@@ -7,12 +7,19 @@
  */
 
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-const BASE_URL: string =
+const configuredUrl =
   (Constants.expoConfig?.extra?.apiBaseUrl as string | undefined) ??
   'http://localhost:8000';
+
+// Android emulators need 10.0.2.2 to access the host machine's localhost
+const BASE_URL: string =
+  Platform.OS === 'android' && configuredUrl.includes('localhost')
+    ? configuredUrl.replace('localhost', '10.0.2.2')
+    : configuredUrl;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

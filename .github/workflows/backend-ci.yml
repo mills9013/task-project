@@ -12,6 +12,7 @@ on:
       - main
     paths:
       - 'backend/**'
+  workflow_dispatch:
 
 # Required for AWS OIDC authentication
 permissions:

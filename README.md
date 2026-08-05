@@ -90,17 +90,33 @@ Press `i` to open in an iOS simulator, `a` for Android, or `w` for the web.
 - Runs `eas submit` to automatically upload the resulting IPA to Apple TestFlight.
 - All credentials are kept out of source control and managed via GitHub Secrets.
 
-## Configuration & Secrets
+## Configuration & Secrets (CI/CD Setup)
 
-### Backend Deployment Variables (GitHub)
-- `AWS_ACCOUNT_ID`: AWS Account ID (e.g., `123456789012`).
-- `AWS_REGION`: AWS Region (e.g., `us-east-1`).
-- `ECR_REPOSITORY`: The name of the ECR repository.
+To enable the GitHub Actions CI/CD pipelines, you must configure the following Secrets and Variables in your GitHub Repository (**Settings > Secrets and variables > Actions**).
 
-### Frontend Deployment Secrets (GitHub)
-- `EXPO_TOKEN`: Personal Access Token for EAS.
-- `ASC_APP_ID`: App Store Connect App ID (for TestFlight submission).
-- Apple Developer credentials are also required if `eas credentials` haven't been previously configured.
+### 1. Backend CI/CD (AWS ECR)
+The backend uses AWS OIDC authentication. You must configure the OIDC provider in your AWS account (see the `infra/` folder) and set the following **Repository Variables**:
+- `AWS_ACCOUNT_ID`: Your 12-digit AWS Account ID (e.g., `123456789012`).
+- `AWS_REGION`: The AWS Region your ECR repo resides in (e.g., `us-east-1`).
+- `ECR_REPOSITORY`: The name of the Elastic Container Registry repository.
+
+### 2. Frontend CI/CD (EAS to TestFlight)
+The frontend uses Expo Application Services (EAS) to build and submit the app.
+Set the following **Repository Secrets**:
+- `EXPO_TOKEN`: Create a Robot token from your Expo dashboard (Settings > Access tokens).
+- `ASC_APP_ID`: App Store Connect App ID (The 10-digit "Apple ID" found in App Store Connect under General > App Information).
+- `APPLE_ID`: Your Apple Developer account email address.
+- `APPLE_TEAM_ID`: Your 10-character alphanumeric Apple Team ID.
+
+**Crucial First-Time Setup Step (Apple Credentials):**
+Before the CI/CD pipeline can build your iOS app non-interactively on GitHub Actions, you **must** generate Apple Distribution Certificates and Provisioning Profiles and save them to Expo's servers. Run this locally in your terminal exactly once:
+
+```bash
+cd frontend
+npx eas credentials
+```
+
+Follow the interactive prompts to select **iOS** -> **production** -> **All**. Log in to Apple when asked and allow EAS to automatically generate and sync the required credentials. Once setup is complete, the GitHub Actions pipeline will successfully build and submit your app!
 
 ## Trade-offs & Design Decisions
 

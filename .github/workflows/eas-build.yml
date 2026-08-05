@@ -45,4 +45,4 @@ jobs:
         run: |
           # Inject ASC_APP_ID directly into eas.json since Expo doesn't support env vars here
           jq '.submit.production.ios.ascAppId = env.ASC_APP_ID' eas.json > eas.tmp.json && mv eas.tmp.json eas.json
-          eas submit --platform ios --profile production --non-interactive
+          eas submit --platform ios --profile production --latest --non-interactive
